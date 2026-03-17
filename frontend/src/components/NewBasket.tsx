@@ -19,17 +19,17 @@ const NewBasket = ({ userToken, endpoint, setEndpoint, onBasketCreated }: any) =
 
   return (
     <div>
-      <h1>New Basket</h1>
-      <p>Create a new basket to send HTTP requests to.</p>
-      <p className="input-row">
-        {backendBaseUrl}/
+      <h2>// new basket</h2>
+      <p>Create an endpoint to capture HTTP requests.</p>
+      <div className="input-row">
+        <span className="input-row-prefix">{backendBaseUrl}/</span>
         <input
           aria-label="new-basket-path"
           value={endpoint || ''}
           onChange={(event) => setEndpoint?.(event.target.value)}
         />
-      </p>
-      <button className="cta-button" onClick={handleCreateBasket}>Create</button>
+      </div>
+      <button className="cta-button" onClick={handleCreateBasket}>$ create</button>
     </div>
   )
 }

@@ -23,8 +23,8 @@ const MyBaskets = (props:any) => {
   
   return (
     <div>
-      <h2>My Baskets</h2>
-      <p className="subtle-text">Choose a bin to load its request history.</p>
+      <h2>// my baskets</h2>
+      <p className="subtle-text">Select an endpoint to inspect its requests.</p>
       {props.baskets.map((basket: any) => {
         return (
           <p key={String(basket)} className="basket-list-row">

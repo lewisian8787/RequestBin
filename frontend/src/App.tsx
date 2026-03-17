@@ -86,8 +86,8 @@ function App() {
   return (
     <div className="App">
       <header className="app-hero">
-        <p className="eyebrow">Request Bin</p>
-        <h1>Inspect HTTP Traffic Instantly</h1>
+        <p className="eyebrow">RequestStore</p>
+        <h1><span className="prompt">$</span> inspect http traffic<span className="cursor"></span></h1>
       </header>
       <div className="component-container">
         <div className="new-basket-panel">

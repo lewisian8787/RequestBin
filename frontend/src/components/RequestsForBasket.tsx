@@ -96,7 +96,7 @@ const RequestsForBasket = ({ selectedBasket }: { selectedBasket: string }) => {
 
   return (
     <div className="requests-panel">
-      <h2>Requests for Basket</h2>
+      <h2>// incoming requests</h2>
       <div className="basket-url-row">
         <p className="basket-url">{selectedBasket}</p>
         <button className="copy-url-button" onClick={() => navigator.clipboard.writeText(selectedBasket)}>Copy URL</button>
