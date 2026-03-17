@@ -7,7 +7,8 @@ import basketService from './services/basketService'
 
 function App() {
 
-  const backendBaseUrl = 'http://localhost:3000'
+  const backendBaseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000'
+
   
   const [userToken, setUserToken] = useState<string | null>(null)
   const [baskets, setUserBaskets] = useState<string[]>([])
@@ -72,7 +73,7 @@ function App() {
       })
       .then((rows: any[]) => {
         if (Array.isArray(rows)) {
-          const mapped = rows.map((row: any) => `http://localhost:3000/${row.endpoint}`);
+          const mapped = rows.map((row: any) => `${backendBaseUrl}/${row.endpoint}`);
           setUserBaskets(mapped);
         }
       })

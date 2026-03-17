@@ -1,6 +1,8 @@
 import React from 'react'
 import basketService from '../services/basketService'
 
+const backendBaseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000'
+
 const NewBasket = ({ userToken, endpoint, setEndpoint, onBasketCreated }: any) => {
 
   async function handleCreateBasket(event: any) {
@@ -20,7 +22,7 @@ const NewBasket = ({ userToken, endpoint, setEndpoint, onBasketCreated }: any) =
       <h1>New Basket</h1>
       <p>Create a new basket to send HTTP requests to.</p>
       <p className="input-row">
-        http://localhost:3000/
+        {backendBaseUrl}/
         <input
           aria-label="new-basket-path"
           value={endpoint || ''}
