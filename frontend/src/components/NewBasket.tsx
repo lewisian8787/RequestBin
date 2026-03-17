@@ -1,7 +1,7 @@
 import React from 'react'
 import basketService from '../services/basketService'
 
-const backendBaseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000'
+const backendBaseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'
 
 const NewBasket = ({ userToken, endpoint, setEndpoint, onBasketCreated }: any) => {
 

@@ -7,7 +7,7 @@ import basketService from './services/basketService'
 
 function App() {
 
-  const backendBaseUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000'
+  const backendBaseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'
 
   
   const [userToken, setUserToken] = useState<string | null>(null)
