@@ -25,16 +25,21 @@ const MyBaskets = (props:any) => {
     <div>
       <h2>// my baskets</h2>
       <p className="subtle-text">Select an endpoint to inspect its requests.</p>
-      {props.baskets.map((basket: any) => {
-        return (
+      {props.baskets.length === 0 ? (
+        <div className="empty-state">
+          <p className="empty-state-line"><span className="empty-prompt">$</span> no baskets yet</p>
+          <p className="empty-state-hint">create one to get started<span className="cursor" /></p>
+        </div>
+      ) : (
+        props.baskets.map((basket: any) => (
           <p key={String(basket)} className="basket-list-row">
-              <button className="basket-link" type="button" onClick={() => props.onBasketClick(basket)}>
-                {basket}
-              </button>
-              <button className="basket-delete-button" onClick={() => handleDeleteBasket(basket)}>Delete</button>
-          </p>  
-        )
-      })}
+            <button className="basket-link" type="button" onClick={() => props.onBasketClick(basket)}>
+              {basket}
+            </button>
+            <button className="basket-delete-button" onClick={() => handleDeleteBasket(basket)}>Delete</button>
+          </p>
+        ))
+      )}
     </div>
   )
 }

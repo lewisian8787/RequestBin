@@ -356,6 +356,116 @@
   line-height: 1.5;
 }
 
+/* ── Method badges ── */
+.method-badge {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: #1a3a1a;
+  color: #3fb950;
+  border: 1px solid #2ea043;
+}
+
+.method-badge--post {
+  background: #0d2a4a;
+  color: #58a6ff;
+  border-color: #1f6feb;
+}
+
+.method-badge--delete {
+  background: #3a0d0d;
+  color: #f85149;
+  border-color: #da3633;
+}
+
+.method-badge--put {
+  background: #3a2a00;
+  color: #d29922;
+  border-color: #9e6a03;
+}
+
+.method-badge--patch {
+  background: #2d1a2d;
+  color: #db61a2;
+  border-color: #8957e5;
+}
+
+.method-badge--unknown {
+  background: #21262d;
+  color: #8b949e;
+  border-color: #30363d;
+}
+
+/* ── Live indicator ── */
+.requests-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.requests-panel-header h2 {
+  margin: 0;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: #484f58;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.live-indicator--active {
+  color: #3fb950;
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #484f58;
+}
+
+.live-indicator--active .live-dot {
+  background: #3fb950;
+  box-shadow: 0 0 6px #3fb950;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px #3fb950; }
+  50% { opacity: 0.5; box-shadow: 0 0 2px #3fb950; }
+}
+
+/* ── Empty states ── */
+.empty-state {
+  padding: 1.5rem 0.5rem;
+  color: #484f58;
+}
+
+.empty-state-line {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  color: #8b949e;
+}
+
+.empty-prompt {
+  color: #3fb950;
+  margin-right: 0.4rem;
+}
+
+.empty-state-hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #484f58;
+}
+
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .App {
