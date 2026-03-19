@@ -1,31 +1,21 @@
 import express from "express";
-import dotenv from "dotenv";
+import { loadConfig } from './config.js';
 import { pool, initializeSchema, generateMasterToken } from './db/psql_schema.js'
 import { mongoExecutor } from './db/mongo_schema.js';
 import mongoose from "mongoose";
 import cors from "cors";
-// needed to serve front end from the backend
 import path from "path";
 import { fileURLToPath } from 'url';
-
-//for websockets
 import http from "http";
 import { Server } from "socket.io";
 
-// constructor function to create a new mongo id
 const { ObjectId } = mongoose.Types;
-//load in environment variables form .env in the root, proces as kv pairs and adding to process.env.[insert variable here]
-dotenv.config();
+
+await loadConfig();
+await mongoose.connect(process.env.MONGODB_URI!);
 
 const app = express();
 initializeSchema();
-
-//getting express to read the static files
-const __filename = fileURLToPath(import.meta.url);
-// strips the filename off the end giving you the directory
-const __dirname = path.dirname(__filename);
-// instructing express to serve any files in backend/dist as static assets
-app.use(express.static(path.join(__dirname, '..', 'dist')));
 
 const generateEndpoint = () => {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -38,39 +28,35 @@ const generateEndpoint = () => {
   return output;
 }
 
-//Middleware
-app.use(express.json()); // JSON bodies
-app.use(cors()); // enable CORS;
-app.use(express.urlencoded({ extended: true })); // URL-encoded bodies
-app.use(express.text({ type: 'text/*' })); // Text bodies
+app.use(express.json());
+app.use(cors());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.text({ type: 'text/*' }));
 
-//creating raw http server; need this for socket.io; express's protocol by default is too low
 const server = http.createServer(app);
 
-const io  = new Server(server, {
+const io = new Server(server, {
   cors: {
-    origin: "*",// for dev purposes; we should restrict this to frontend url in time
+    origin: "*",
     methods: ["GET", "POST"]
   }
 });
 
 io.on("connection", (socket) => {
   console.log("connected to frontend");
-
   socket.on("disconnect", () => {
     console.log("frontend disconnected");
   })
 });
 
-
-//routes
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
 
 app.get('/api/web/baskets', async (req, res) => {
   const masterToken = req.headers['master-token'];
-
-  if (!masterToken) return res.status(204).send(); // early exit if no token exists
-
-  // retrieving all rows in baskets table matching the mastertoken id
+  if (!masterToken) return res.status(204).send();
   try {
     const result = await pool.query(
       `SELECT b.*
@@ -80,31 +66,24 @@ app.get('/api/web/baskets', async (req, res) => {
       WHERE mt.token = $1`,
       [masterToken]
     );
-    res.status(200).json(result.rows) // array being returned in the json body
+    res.status(200).json(result.rows)
   } catch (err) {
     res.status(500).send('Error retrieving baskets.')
 }});
 
 app.get('/api/web', async (req, res) => {
   let newEndPoint = generateEndpoint();
-  // attempts to guard against clashing
   let attempts = 0;
   const MAX_ATTEMPTS = 5;
-
-  // check for duplicated endpoint
   try {
     while (attempts < MAX_ATTEMPTS) {
       let result = await pool.query(
         `SELECT * FROM BASKETS WHERE endpoint = $1`, [newEndPoint]
       );
-      // evaluate if psql returned a row and breaks out of loop if so
       if (!result.rows.length) { break }
-      // creates another endpoint and loops if exists in psql
       newEndPoint = generateEndpoint();
       attempts++;
     }
-
-    //continues here if no clash of endpoints was found
     if (attempts === MAX_ATTEMPTS) { throw new Error }
     res.status(200).json({ newEndPoint })
   } catch (err) {
@@ -112,33 +91,25 @@ app.get('/api/web', async (req, res) => {
   }
 });
 
-// creating a new basket
 app.post("/api/web/:endpoint", async (req, res) => {
   let masterToken = req.headers['master-token'];
   const newEndPoint = req.params.endpoint;
   let masterTokenId;
-
-
-  // if new user, then generate a master token and set that string to masterToken + set id too
-  // changed this block to wrap in try/catch instead of mixing await/async
-    try {
-      if (!masterToken) {
-        const newMasterTokenRow = await generateMasterToken();
-        masterToken = newMasterTokenRow.token;
-        masterTokenId = newMasterTokenRow.id;
-      } else {
-        // existing user
-        const result = await pool.query(
-          `SELECT id FROM master_tokens WHERE token = $1`, [masterToken]
-        );
-        masterTokenId = result.rows[0].id;
-      }
-    } catch (err) {
-      return res.status(500).send(`Error resolving master token`);
-    }
-
   try {
-    // inserts new endpoint into the database
+    if (!masterToken) {
+      const newMasterTokenRow = await generateMasterToken();
+      masterToken = newMasterTokenRow.token;
+      masterTokenId = newMasterTokenRow.id;
+    } else {
+      const result = await pool.query(
+        `SELECT id FROM master_tokens WHERE token = $1`, [masterToken]
+      );
+      masterTokenId = result.rows[0].id;
+    }
+  } catch (err) {
+    return res.status(500).send(`Error resolving master token`);
+  }
+  try {
     await pool.query(
       `INSERT INTO baskets (endpoint, config_response, master_token_id)
       VALUES ($1, $2, $3);`, [newEndPoint, {}, masterTokenId]
@@ -149,12 +120,10 @@ app.post("/api/web/:endpoint", async (req, res) => {
   }
 });
 
-// retrieving all requests for an endpoint
 app.get("/api/web/:endpoint", async (req, res) => {
   const endpoint = req.params.endpoint;
-
   try {
-    const result = await pool.query (
+    const result = await pool.query(
       `SELECT r.*
       FROM baskets b
       LEFT JOIN requests r ON r.basket_id = b.id
@@ -162,34 +131,23 @@ app.get("/api/web/:endpoint", async (req, res) => {
       ORDER BY r.id DESC;`,
       [endpoint]
     );
-
     if (!result.rows.length) { return res.status(404).send() }
-
-    //result is an object (pool always returns an object), with a rows property (array) containing objects (individual rows)
-    // Fetch MongoDB data for each row
     await Promise.all(result.rows.map(async (rowObj) => {
-      if (rowObj.mongodb_id) { // make sure mongodb_id exists; can be null for bodyless requests
-        // .lean() returns plain js obj instead of mongoose doc containing extra methods
+      if (rowObj.mongodb_id) {
         const mongoResult = await mongoExecutor.findById(rowObj.mongodb_id).lean();
-        // not writing to psql, in memory enrichment (attaching a temp property)
         rowObj.mongoRequestBody = mongoResult;
       }
       return rowObj;
     }));
-
-    // Return combined result including temp property
     res.status(200).json(result.rows);
-
   } catch (err) {
     console.error("Failed to interface with DB:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// route to delete an entire basket
 app.delete("/api/web/:endpoint", async (req, res) => {
   const endpoint = req.params.endpoint;
-  // retrieve all rows in baskets with the endpoint passed in 
   try {
     const requestsResult = await pool.query(
       `SELECT r.mongodb_id
@@ -199,17 +157,10 @@ app.delete("/api/web/:endpoint", async (req, res) => {
       [endpoint]
     );
     const mongoIds = requestsResult.rows
-    // creating a array to contain just mongodb_id's
       .map(row => row.mongodb_id)
-    // creatging new array of Mongo ID objects
       .map(id => new ObjectId(id));
-    
-    // delete endpoint from baskets, on delete cascade should delete requests too
     await pool.query(`DELETE FROM baskets WHERE endpoint = $1`, [endpoint]);
-
-    // delete from Mongo database all docs that were associated with the basket id
     await mongoExecutor.deleteMany({ _id: { $in: mongoIds } });
-
     return res.status(204).send();
   } catch (err) {
     console.error('Error deleting basket:', err);
@@ -217,10 +168,8 @@ app.delete("/api/web/:endpoint", async (req, res) => {
   }
 });
 
-// route to delete specific requests. 
 app.delete("/api/web/requests/:id", async (req, res) => {
   const requestId = req.params.id;
-
   try {
     const result = await pool.query(
       `DELETE FROM requests WHERE id = $1 RETURNING *`,
@@ -235,11 +184,8 @@ app.delete("/api/web/requests/:id", async (req, res) => {
     console.log(`either postgres or mongo delete function failed`, err);
     return res.status(500).send(`problem deleting request`);
   }
-
 });
 
-// put to edit the config response object
-// not wired up yet
 app.put("/api/web/:endpoint", async (req, res) => {
   const endpoint = req.params.endpoint;
   const newConfig = req.body;
@@ -258,10 +204,7 @@ app.put("/api/web/:endpoint", async (req, res) => {
 
 app.all('/:endpoint', async (req, res) => {
   const endpoint = req.params.endpoint;
-
-  //save the body to mongodb if there is a body;
   let mongoId;
-
   if (req.body) {
     try {
       const mongoDoc = await mongoExecutor.create({ requestPayload: req.body });
@@ -270,11 +213,8 @@ app.all('/:endpoint', async (req, res) => {
       return res.status(500).send('Error saving to Mongo database');
     }
   }
-  //save metadata to postgres
-  // PG will alegedly cast the date and times to the correct columns with the duplicate NOW() calls. Not tested yet. 
-  // tested, works!
   try {
-    const result= await pool.query(
+    const result = await pool.query(
       `INSERT INTO requests (basket_id, method, headers, request_date, request_time, mongodb_id)
       SELECT b.id, $1, $2, NOW(), NOW(), $3
       FROM baskets b
@@ -282,33 +222,16 @@ app.all('/:endpoint', async (req, res) => {
       RETURNING *`,
       [req.method, req.headers, mongoId, endpoint]
     );
-
     if (!result.rows[0]) {
       return res.status(404).send('Basket not found');
     }
-
     io.emit("newRequest", { requestMetadata: result.rows[0], endpoint, body: req.body })
-
-    //I suppose this is where we'd add custom responses if the basket has a non empty config_response field
-    //something like:
-    //const method = basket.config_response.method and so on for other details
-    //or capture them from the req object itself and then so on.
-
     res.status(200).send(`Request captured and emmited via socket.`)
   } catch (err) {
     console.error('Error sending metadata to PGdb:', err);
     return res.status(500).send('Error sending metadata to PGdb')
   }
 });
-
-// Matches any path that does NOT contain a dot (.), so actual files like .js/.css/images are served by express.static
-app.get(/^\/(?!.*\..*).*$/, (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
-});
-
-//Error Handler
-
-//Start Server
 
 const PORT = process.env.PORT || 3000;
 

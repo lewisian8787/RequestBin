@@ -2,8 +2,6 @@ import mongoose, { Document, Schema, Types } from 'mongoose';
 
 const mongourl = process.env.MONGODB_URI as string; //this will definitely exist in .env
 
-await mongoose.connect(mongourl);
-
 // extending document because working directly with the mongoDB document requires this
 export interface RequestBodyDocument extends Document {
   requestPayload: Record<string, any>;
