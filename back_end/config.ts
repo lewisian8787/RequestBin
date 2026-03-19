@@ -36,7 +36,7 @@ export async function loadConfig() {
     process.env.PGPORT = rdsSecret.port.toString();
     process.env.PGDATABASE = dbName;
 
-    process.env.MONGODB_URI = `mongodb://${docdbSecret.username}:${docdbSecret.password}@${docdbSecret.host}:${docdbSecret.port}/?tls=true&tlsCAFile=/tmp/global-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false`;
+    process.env.MONGODB_URI = `mongodb://${docdbSecret.username}:${docdbSecret.password}@${docdbSecret.host}:${docdbSecret.port}/?tls=true&tlsCAFile=/etc/ssl/certs/global-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false`;
 
     console.log("Config loaded from AWS.");
   } else {
