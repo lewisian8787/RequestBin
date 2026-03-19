@@ -4,8 +4,11 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // Create a connection pool; this should automatically read from .env
-export const pool = new Pool();
-
+export const pool = new Pool({
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
 // Define your schema
 // make sure pgcrypto exists for uuid
 
